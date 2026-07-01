@@ -1,0 +1,6 @@
+{
+  "name": "Clay & Co. Pottery Studio",
+  "description": "A serene and grounded digital home for Clay & Co. Pottery Studio, featuring a student gallery, class booking sessions, and studio memberships.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
