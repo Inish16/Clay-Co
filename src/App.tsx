@@ -5,11 +5,35 @@ import ClassesView from './components/ClassesView';
 import GalleryView from './components/GalleryView';
 import MembershipView from './components/MembershipView';
 import AboutView from './components/AboutView';
+import LoadingSpinner from './components/LoadingSpinner';
 import { ActiveView } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('classes');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Simulate initial app startup loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle graceful navigation with spinner
+  const handleNavigation = (view: ActiveView) => {
+    if (view === activeView) return;
+    
+    setIsNavigating(true);
+    // Simulate network/transition delay
+    setTimeout(() => {
+      setActiveView(view);
+      setIsNavigating(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 600);
+  };
   
   // Dark mode state initialized with local storage and system prefers-color-scheme
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -40,12 +64,14 @@ export default function App() {
 
   // Handles "Book Now" clicking inside Header or from anywhere
   const handleBookNowTrigger = () => {
-    setActiveView('classes');
-    // Set trigger with current timestamp to ensure useEffect fires even if the class stays the same
-    setClassBookTrigger({
-      selectedClass: 'Beginner Foundations',
-      timestamp: Date.now()
-    });
+    handleNavigation('classes');
+    // Set trigger slightly after navigation to ensure view has mounted
+    setTimeout(() => {
+      setClassBookTrigger({
+        selectedClass: 'Beginner Foundations',
+        timestamp: Date.now()
+      });
+    }, 650);
   };
 
   return (
@@ -53,43 +79,57 @@ export default function App() {
       {/* Top Header Navigation */}
       <Header
         activeView={activeView}
-        setActiveView={setActiveView}
+        setActiveView={handleNavigation}
         onBookNowClick={handleBookNowTrigger}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
       />
 
       {/* Main Content Canvas with smooth transition fade */}
-      <main className="flex-grow">
+      <main className="flex-grow flex flex-col relative min-h-[60vh]">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activeView}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          >
-            {activeView === 'classes' && (
-              <ClassesView onClassBookTrigger={classBookTrigger} />
-            )}
-            
-            {activeView === 'gallery' && (
-              <GalleryView />
-            )}
+          {isInitialLoad || isNavigating ? (
+            <motion.div
+              key="loading-spinner"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-background"
+            >
+              <LoadingSpinner />
+            </motion.div>
+          ) : (
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="w-full flex-grow flex flex-col"
+            >
+              {activeView === 'classes' && (
+                <ClassesView onClassBookTrigger={classBookTrigger} />
+              )}
+              
+              {activeView === 'gallery' && (
+                <GalleryView />
+              )}
 
-            {activeView === 'membership' && (
-              <MembershipView />
-            )}
-            
-            {activeView === 'about' && (
-              <AboutView />
-            )}
-          </motion.div>
+              {activeView === 'membership' && (
+                <MembershipView />
+              )}
+              
+              {activeView === 'about' && (
+                <AboutView />
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
       {/* Bottom Footer block */}
-      <Footer setActiveView={setActiveView} />
+      <Footer setActiveView={handleNavigation} />
     </div>
   );
 }
